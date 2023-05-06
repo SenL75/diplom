@@ -1,0 +1,89 @@
+<!DOCTYPE html> 
+<html> 
+    <head> 
+
+        <title>Музыкальный сайт</title> 
+        <link rel="stylesheet" href="{% static 'css/style.css' %}"> 
+    </head> 
+    <body> 
+        <header> 
+            <h1>Музыкальный сайт</h1> 
+        </header> <main> 
+            <form action="{% url 'search_songs' %}" method="GET"> 
+                <label for="search_input">Поиск песен:</label> 
+                <input type="text" id="search_input" name="q"> <input type="submit" value="Найти"> 
+            </form> 
+            {% if song %} 
+            <h2>{{ song.name }}</h2> 
+            <audio controls id="audio_player"> 
+                <source src="{% url 'play_audio' song.id %}"> 
+            </audio> 
+            <div class="controls"> 
+                <button id="prev_button" onclick="prevSong()">Назад</button> 
+                <button id="play_button" onclick="playAudio()">Воспроизвести</button> 
+                <button id="pause_button" onclick="pauseAudio()" style="display: none;">Пауза</button> 
+                <button id="next_button" onclick="nextSong()">Вперед</button> 
+            </div> 
+            {% endif %} 
+        </main> 
+        <footer> 
+            <p>&copy; 2021 Музыкальный сайт</p> 
+        </footer>
+    
+<script> 
+    var currentSong = {% if song %}{{ song.id|safe }}{% else %}null{% endif %}; 
+    var songList = [ {% for song in songs %} { id: {{ song.id }}, name: "{{ song.name }}", src: "{% url 'play_audio' song.id %}" }{% if not forloop.last %},{% endif %} {% endfor %} ]; 
+    function playAudio() { 
+        var audioPlayer = document.getElementById("audio_player"); audioPlayer.play(); 
+        document.getElementById("play_button").style.display = "none"; 
+        document.getElementById("pause_button").style.display = "inline-block"; } 
+        function pauseAudio() { 
+            var audioPlayer = document.getElementById("audio_player"); 
+            audioPlayer.pause(); document.getElementById("play_button").style.display = "inline-block"; 
+            document.getElementById("pause_button").style.display = "none"; } 
+            function nextSong() { if (!currentSong) { currentSong = songList[0].id; 
+                var audioPlayer = document.getElementById("audio_player"); 
+                audioPlayer.src = songList[0].src; 
+                document.getElementsByTagName("h2")[0].innerHTML = songList[0].name; 
+                playAudio(); return; } 
+                var newIndex = songList.findIndex(function (song) { 
+                    return song.id === currentSong; }) + 1; 
+                    if (newIndex >= songList.length) { newIndex = 0; } currentSong = songList[newIndex].id; 
+                    var audioPlayer = document.getElementById("audio_player"); 
+                    audioPlayer.src = songList[newIndex].src; 
+                    document.getElementsByTagName("h2")[0].innerHTML = songList[newIndex].name; playAudio(); } 
+                    function prevSong() { 
+                        if (!currentSong) { currentSong = songList[songList.length - 1].id; 
+                            var audioPlayer = document.getElementById("audio_player"); 
+                            audioPlayer.src = songList[songList.length - 1].src; 
+                            document.getElementsByTagName("h2")[0].innerHTML = songList[songList.length - 1].name; 
+                            playAudio(); 
+                            return; } 
+                            var newIndex = songList.findIndex(function(song) { 
+                                return song.id === currentSong; }) - 1; 
+                                if (newIndex < 0) { newIndex = songList.length - 1; } currentSong = songList[newIndex].id; 
+                                var audioPlayer = document.getElementById("audio_player"); 
+                                audioPlayer.src = songList[newIndex].src; 
+                                document.getElementsByTagName("h2")[0].innerHTML = songList[newIndex].name; 
+                                playAudio(); } 
+    // AJAX запрос на получение списка песен 
+    function getSongs() { var xhr = new XMLHttpRequest(); 
+        xhr.onreadystatechange = function() { if (this.readyState == 4 && this.status == 200) { 
+            var response = JSON.parse(this.responseText); 
+            songList = response.songs; } }; 
+            xhr.open("GET", "/get_songs/", true); 
+            xhr.send(); } 
+    // AJAX запрос на получение информации о песне 
+    function searchSongs() { 
+        var query = document.getElementById("search_input").value; 
+        var xhr = new XMLHttpRequest(); xhr.onreadystatechange = function() { 
+            if (this.readyState == 4 && this.status == 200) { 
+                var response = JSON.parse(this.responseText); 
+                if (response.song) { currentSong = response.song.id; 
+                    var audioPlayer = document.getElementById("audio_player"); 
+                    audioPlayer.src = response.song.src; 
+                    document.getElementsByTagName("h2")[0].innerHTML = response.song.name; 
+                    playAudio(); } } };
+                    xhr.open("GET", "/search_songs/?q=" + query, true); 
+                    xhr.send(); } 
+</script>
