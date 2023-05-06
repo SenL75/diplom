@@ -10,27 +10,27 @@
 	<div class="container">
 		<h1>Музыкальный плеер</h1>
 		<audio id="audio-player"></audio>
-		<!-- Форма для ввода названия песни -->
-		<form id="search-form">
-			<label for="search-input">Введите название песни:</label>
-			<input type="text" id="search-input" name="search-input" required>
-			<button type="submit">Найти</button>
-		</form>
-		<!-- Создаем список песен -->
-		<ul id="song-list"></ul>
+        <!-- Форма поиска -->
+        <form id="search-form">
+            <label for="search-input">Введите название песни:</label>
+	        <input id="search-input" type="text" name="search" placeholder="Название трека">
+	        <button type="submit">Найти</button>
+        </form>
+        <!-- Список треков -->
+        <ul id="song-list">
+	        <!-- Здесь будут отображаться треки с сервера -->
+        </ul>
 		<!-- Создаем кнопки управления плеером -->
-		<div class="playback-buttons">
-			<button id="play-button"><img src="play-button.png" alt="Play"></button>
-			<button id="pause-button"><img src="pause-button.png" alt="Pause"></button>
-			<button id="stop-button"><img src="stop-button.png" alt="Stop"></button>
-		</div>
+        <div id="control-buttons">
+            <button id="play-button">Play</button>
+            <button id="pause-button">Pause</button>
+            <button id="stop-button">Stop</button>
+        </div>
 	</div>
-
 	<!-- Подключаем скрипты -->
 	<script>
 		// Создаем объект Audio
 		var audio = new Audio();
-
 		// Получаем список файлов с сервера
 		function getFiles() {
 			fetch('/getfiles')
@@ -98,90 +98,40 @@
 									audio.play();
 								} else {
 									// Если файл не найден ни на сервере, ни в интернете, то выводим сообщение об ошибке
-									alert("Файл не найден");
-                                
-    // Создаем список песен 
-    var songList = document.getElementById("song-list");
-	// Обработчик получения списка песен от сервера
-	function renderSongList(songs) {
-		// Очищаем список песен
-		while (songList.firstChild) {
-			songList.removeChild(songList.firstChild);
-		}
-		// Добавляем каждую песню в список
-		for (var i = 0; i < songs.length; i++) {
-			var songItem = document.createElement("li");
-			songItem.textContent = songs[i].name;
-			// Добавляем обработчик клика на песню
-			songItem.addEventListener("click", function() {
-				// Выполняем поиск файла на сервере
-				fetch('/search?name=' + this.textContent)
-					.then(response => {
-						return response.json();
-					})
-					.then(data => {
-						// Если файл найден, то воспроизводим его
-						if (data.success) {
-							setSource("audio/" + data.file);
-							audio.play();
-						} else {
-							// Если файл не найден на сервере, то выполняем поиск в интернете
-							fetch('/search-internet?name=' + this.textContent)
-								.then(response => {
-									return response.json();
-								})
-								.then(data => {
-									// Если файл найден в интернете, то воспроизводим его
-									if (data.success) {
-										setSource(data.url);
-										audio.play();
-									} else {
-										// Если файл не найден ни на сервере, ни в интернете, то выводим сообщение об ошибке
-										alert("Файл не найден");
+									alert("Файл не найден"); 
+                                } 
+                            }) 
+                            .catch(error => { 
+                                console.error(error); 
+                            }); 
+                        } 
+                        else { 
+                            // Если файл не найден на сервере, то выполняем поиск в интернете 
+                            fetch('/search-internet?name=' + searchText) 
+                            .then(response => { 
+                                return response.json(); 
+                            }) 
+                            .then(data => { 
+                                // Если файл найден в интернете, то воспроизводим его 
+                                if (data.success) { 
+                                    setSource(data.url); audio.play(); 
+                                } 
+                                else { 
+                                    // Если файл не найден ни на сервере, ни в интернете, то выводим сообщение об ошибке 
+                                    alert("Файл не найден"); 
+                                } 
+                            }) 
+                            .catch(error => { 
+                                console.error(error); 
+                            }); 
+                        } 
+                    }) 
+                    .catch(error => { console.error(error); 
+                    }); 
+                });
 
-
-                                        // Создаем новый список песен после отправки формы поиска
-                                        function renderSearchList(file) { 
-                                            // Очищаем список песен 
-                                            while (songList.firstChild) { songList.removeChild(songList.firstChild); } 
-                                            // Добавляем найденную песню в список
-                                             var songItem = document.createElement("li"); 
-                                             songItem.textContent = file; songItem.addEventListener("click", function() { setSource("audio/" + file); 
-                                             audio.play(); }); 
-                                             songList.appendChild(songItem); }
-                                            		// Обрабатываем отправку формы поиска
-		                                                document.getElementById("search-form").addEventListener("submit", function(e) {
-                                                            e.preventDefault();
-                                                            var searchText = document.getElementById("search-input").value;
-                                                            fetch("/search?name=" + searchText)
-                                                            .then(response => {
-                                                                return response.json();
-                                                            })
-                                                            .then(data => {
-                                                                if (data.success) {
-                                                                    setSource("audio/" + data.file);
-                                                                    audio.play();
-                                                                    renderSearchList(data.file);
-                                                                } else {
-                                                                    fetch("/search-internet?name=" + searchText)
-                                                                    .then(response => {
-                                                                        return response.json();
-                                                                    })
-                                                                    .then(data => {
-                                                                        if (data.success) {
-                                                                            setSource(data.url);
-                                                                            audio.play();
-                                                                            renderSearchList(data.file);
-                                                                        } else {
-                                                                            alert("Файл не найден");
-                                                                        }
-                                                                    });
-                                                                }
-                                                            });
-                                                        });
-                                                    }
-        // Получаем список песен с сервера при загрузке страницы
-        getFiles();
-    </script>
+	// Получаем список файлов при загрузке страницы
+	window.onload = getFiles;
+</script>
 </body>
 </html>
